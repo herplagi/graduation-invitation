@@ -1,11 +1,42 @@
+import { useEffect, useState } from "react"
 import profileImg from "/profile.jpg"
 
 export default function Hero() {
+  const [gifPosition, setGifPosition] = useState({ x: 10, y: 10 })
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGifPosition({
+        x: Math.random() * 85,
+        y: Math.random() * 85,
+      })
+    }, 3000) // Berpindah setiap 3 detik
+
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <section
       id="hero"
       className="relative flex flex-col items-center text-center px-6 pt-16 pb-12 overflow-hidden"
       style={{ background: "#0A0E1A" }}>
+
+      {/* Floating Rick and Morty GIF */}
+      <div
+        className="absolute pointer-events-none transition-all duration-1000"
+        style={{
+          left: `${gifPosition.x}%`,
+          top: `${gifPosition.y}%`,
+          opacity: 0.15,
+          zIndex: 0,
+        }}
+      >
+        <img
+          src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzhsMjRteHZ2aTl3dDFkajU2bnBiOHBmbmJtb21rYW1ybmVoaWp6bSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/e6tJpLvjY8jXa/giphy.gif"
+          alt="rick-morty"
+          className="object-containrounded-full"
+        />
+      </div>
 
       {/* Stars */}
       {[...Array(12)].map((_, i) => (
@@ -18,12 +49,13 @@ export default function Hero() {
             opacity: 0.2 + (i % 5) * 0.12,
             animationDuration: `${1.5 + (i % 3) * 0.6}s`,
             animationDelay: `${(i % 4) * 0.4}s`,
+            zIndex: 1,
           }} />
       ))}
 
       {/* Floating UFO */}
       <div className="absolute left-3 top-14 text-4xl select-none pointer-events-none"
-        style={{ animation: "float-ufo 3s ease-in-out infinite" }}>
+        style={{ animation: "float-ufo 3s ease-in-out infinite", zIndex: 2 }}>
         🛸
       </div>
 
@@ -33,6 +65,7 @@ export default function Hero() {
           width: 120, height: 120,
           background: "linear-gradient(135deg, #C0392B, #922B21)",
           border: "4px solid #1A1A2E",
+          zIndex: 1,
         }} />
 
       {/* Profile Avatar */}
@@ -57,7 +90,7 @@ export default function Hero() {
       </div>
 
       {/* Tag */}
-      <div className="mb-4 px-4 py-1 rounded-full font-black text-xs tracking-widest uppercase border-[3px]"
+      <div className="mb-4 px-4 py-1 rounded-full font-black text-xs tracking-widest uppercase border-[3px] relative z-10"
         style={{
           background: "#FF6B9D",
           color: "#fff",
@@ -68,7 +101,7 @@ export default function Hero() {
       </div>
 
       {/* Name */}
-      <h1 style={{
+      <h1 className="relative z-10" style={{
         fontFamily: "'Boogaloo', cursive",
         fontSize: 56,
         color: "#fff",
@@ -80,19 +113,19 @@ export default function Hero() {
       </h1>
 
       {/* Desc Box */}
-      <div className="mt-5 rounded-2xl border-2 border-dashed px-5 py-4 max-w-sm"
+      <div className="mt-5 rounded-2xl border-2 border-dashed px-5 py-4 max-w-sm relative z-10"
         style={{
           background: "rgba(0,255,136,0.07)",
           borderColor: "#00FF88",
         }}>
         <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
-          Dengan penuh rasa syukur — dan sedikit drama interdimensi — saya mengundang
+          Dengan penuh rasa syukur — saya mengundang
           Bapak/Ibu/Saudara/i untuk hadir merayakan wisuda saya.
         </p>
       </div>
 
       {/* Event Info Cards */}
-      <div className="grid grid-cols-2 gap-3 mt-6 w-full max-w-sm">
+      <div className="grid grid-cols-2 gap-3 mt-6 w-full max-w-sm relative z-10">
         <div className="rounded-2xl p-4 text-center border-[3px]"
           style={{ background: "#00FF88", borderColor: "#1A1A2E", color: "#1A1A2E" }}>
           <div className="font-black text-xs tracking-widest uppercase mb-1" style={{ letterSpacing: 2, opacity: 0.7 }}>
@@ -115,7 +148,7 @@ export default function Hero() {
       </div>
 
       {/* Date */}
-      <div className="mt-4 px-4 py-3 rounded-2xl border-2 border-dashed font-bold text-sm w-full max-w-sm"
+      <div className="mt-4 px-4 py-3 rounded-2xl border-2 border-dashed font-bold text-sm w-full max-w-sm relative z-10"
         style={{
           background: "rgba(255,215,0,0.1)",
           borderColor: "#FFD700",

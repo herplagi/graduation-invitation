@@ -49,6 +49,32 @@ export default function Opening() {
         </div>
       </div>
 
+      {/* GIF Rick and Morty */}
+      <div className="mb-5 relative" style={{ zIndex: 10 }}>
+        <img
+          src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOWszdGZjN3cyczR3ZmJuaDhtb3dlY2hyMWNybm16MTI2NGthNHJlNiZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/cJTKQ6WBTffV7DEx4G/giphy.gif"
+          alt="Rick and Morty"
+          style={{
+            width: 180,
+            height: 180,
+            objectFit: "cover",
+            borderRadius: 20,
+            border: "4px solid #00FF88",
+            boxShadow: "0 0 25px #00FF88, 0 0 50px rgba(0,255,136,0.25)",
+            display: "block",
+          }}
+          onError={e => {
+            (e.currentTarget as HTMLImageElement).style.display = "none"
+          }}
+        />
+        {/* Scanline overlay biar kerasa sci-fi */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{
+            borderRadius: 20,
+            background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)",
+          }} />
+      </div>
+
       {/* Name */}
       <h1 className="text-5xl font-bold leading-tight mb-2"
         style={{

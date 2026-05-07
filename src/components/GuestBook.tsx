@@ -12,6 +12,17 @@ export default function GuestBook() {
   const [name, setName] = useState("")
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
+  const [gifPosition, setGifPosition] = useState({ x: 10, y: 10 })
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGifPosition({
+        x: Math.random() * 85,
+        y: Math.random() * 85,
+      })
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   async function loadMessages() {
     const { data } = await supabase
@@ -50,6 +61,23 @@ export default function GuestBook() {
     <section id="guestbook" className="relative px-6 py-16 overflow-hidden"
       style={{ background: "#0A0E1A" }}>
 
+      {/* Floating Rick and Morty GIF */}
+      <div
+        className="absolute pointer-events-none transition-all duration-1000"
+        style={{
+          left: `${gifPosition.x}%`,
+          top: `${gifPosition.y}%`,
+          opacity: 0.15,
+          zIndex: 0,
+        }}
+      >
+        <img
+          src="https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3cWl2NGlzYWU0b3MxdzN6Mmtkdmc4b3kwNDA4a3N3Z3d3dHhyMnFiNyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/el7VG1XOOvi24oRXFt/giphy.gif"
+          alt="rick-morty"
+          className="w-40 h-40 object-contain"
+        />
+      </div>
+
       {/* Stars */}
       {[...Array(10)].map((_, i) => (
         <div key={i} className="absolute rounded-full bg-white animate-pulse pointer-events-none"
@@ -58,11 +86,12 @@ export default function GuestBook() {
             top: `${(i * 97 + 29) % 100}%`, left: `${(i * 181 + 43) % 100}%`,
             opacity: 0.12 + (i % 4) * 0.08,
             animationDuration: `${1.8 + (i % 3) * 0.5}s`,
+            zIndex: 1,
           }} />
       ))}
 
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8 relative z-10">
         <span className="inline-block px-4 py-1 rounded-full font-black text-xs border-[3px] uppercase mb-3"
           style={{
             background: "#FF8C42", color: "#fff",
@@ -79,7 +108,7 @@ export default function GuestBook() {
         </h2>
       </div>
 
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-lg mx-auto relative z-10">
         {/* Form */}
         <input
           type="text"
