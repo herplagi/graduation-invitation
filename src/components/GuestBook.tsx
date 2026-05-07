@@ -8,116 +8,138 @@ type Guestbook = {
 }
 
 export default function GuestBook() {
-
-  const [messages, setMessages] =
-    useState<Guestbook[]>([])
-
+  const [messages, setMessages] = useState<Guestbook[]>([])
   const [name, setName] = useState("")
   const [message, setMessage] = useState("")
+  const [loading, setLoading] = useState(false)
 
   async function loadMessages() {
-
     const { data } = await supabase
       .from("guestbook")
       .select("*")
       .order("id", { ascending: false })
-
-    if (data) {
-      setMessages(data)
-    }
+    if (data) setMessages(data)
   }
 
   async function sendMessage() {
-
     if (!name || !message) return
-
-    await supabase
-      .from("guestbook")
-      .insert([
-        {
-          name,
-          message
-        }
-      ])
-
+    setLoading(true)
+    await supabase.from("guestbook").insert([{ name, message }])
     setName("")
     setMessage("")
-
-    loadMessages()
+    await loadMessages()
+    setLoading(false)
   }
 
-  useEffect(() => {
-    loadMessages()
-  }, [])
+  useEffect(() => { loadMessages() }, [])
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    background: "#0A0E1A",
+    border: "3px solid #00FF88",
+    borderRadius: 14,
+    padding: "14px 18px",
+    color: "#fff",
+    fontFamily: "'Nunito', sans-serif",
+    fontSize: 14,
+    outline: "none",
+    marginBottom: 12,
+  }
 
   return (
-    <section className="py-28 px-6">
+    <section id="guestbook" className="relative px-6 py-16 overflow-hidden"
+      style={{ background: "#0A0E1A" }}>
 
-      <div className="text-center">
+      {/* Stars */}
+      {[...Array(10)].map((_, i) => (
+        <div key={i} className="absolute rounded-full bg-white animate-pulse pointer-events-none"
+          style={{
+            width: `${(i % 3) + 1}px`, height: `${(i % 3) + 1}px`,
+            top: `${(i * 97 + 29) % 100}%`, left: `${(i * 181 + 43) % 100}%`,
+            opacity: 0.12 + (i % 4) * 0.08,
+            animationDuration: `${1.8 + (i % 3) * 0.5}s`,
+          }} />
+      ))}
 
-        <p className="text-yellow-400 tracking-[4px] uppercase">
-          Guest Book
-        </p>
-
-        <h1 className="text-5xl font-bold mt-5">
-          Ucapan & Doa
-        </h1>
-
+      {/* Header */}
+      <div className="mb-8">
+        <span className="inline-block px-4 py-1 rounded-full font-black text-xs border-[3px] uppercase mb-3"
+          style={{
+            background: "#FF8C42", color: "#fff",
+            borderColor: "#1A1A2E", letterSpacing: 3,
+          }}>
+          💌 Guest Book
+        </span>
+        <h2 style={{
+          fontFamily: "'Boogaloo', cursive",
+          fontSize: 40, color: "#fff",
+          textShadow: "3px 3px 0 #1A1A2E", lineHeight: 1,
+        }}>
+          Ucapan &amp;<br />Doa!
+        </h2>
       </div>
 
-      <div className="max-w-3xl mx-auto mt-14">
+      <div className="max-w-lg mx-auto">
+        {/* Form */}
+        <input
+          type="text"
+          placeholder="Nama kamu siapa, Morty?"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          style={inputStyle}
+          onFocus={e => (e.currentTarget.style.borderColor = "#FFD700")}
+          onBlur={e => (e.currentTarget.style.borderColor = "#00FF88")}
+        />
+        <textarea
+          placeholder="Tulis ucapan buat Alvino..."
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          style={{ ...inputStyle, height: 100, resize: "vertical" }}
+          onFocus={e => (e.currentTarget.style.borderColor = "#FFD700")}
+          onBlur={e => (e.currentTarget.style.borderColor = "#00FF88")}
+        />
+        <button
+          onClick={sendMessage}
+          disabled={loading}
+          className="w-full rounded-2xl cursor-pointer transition-all duration-150"
+          style={{
+            fontFamily: "'Boogaloo', cursive",
+            fontSize: 20,
+            letterSpacing: 1,
+            background: loading ? "#555" : "#00FF88",
+            color: "#0A0E1A",
+            border: "4px solid #1A1A2E",
+            padding: "14px 0",
+            boxShadow: "4px 4px 0 #1A1A2E",
+          }}
+          onMouseEnter={e => {
+            if (!loading) {
+              (e.currentTarget as HTMLButtonElement).style.transform = "translate(-1px,-1px)"
+              ;(e.currentTarget as HTMLButtonElement).style.boxShadow = "5px 5px 0 #1A1A2E"
+            }
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.transform = "translate(0,0)"
+            ;(e.currentTarget as HTMLButtonElement).style.boxShadow = "4px 4px 0 #1A1A2E"
+          }}>
+          {loading ? "MENGIRIM..." : "KIRIM UCAPAN ⚡"}
+        </button>
 
-        <div className="flex flex-col gap-5">
-
-          <input
-            type="text"
-            placeholder="Nama"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="bg-zinc-900 p-4 rounded-xl"
-          />
-
-          <textarea
-            placeholder="Ucapan"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="bg-zinc-900 p-4 rounded-xl h-32"
-          />
-
-          <button
-            onClick={sendMessage}
-            className="bg-yellow-400 text-black font-bold p-4 rounded-xl"
-          >
-            Kirim Ucapan
-          </button>
-
-        </div>
-
-        <div className="mt-14 flex flex-col gap-5">
-
-          {
-            messages.map((item) => (
-              <div
-                key={item.id}
-                className="bg-zinc-900 p-6 rounded-3xl"
-              >
-
-                <h1 className="font-bold text-xl">
-                  {item.name}
-                </h1>
-
-                <p className="text-zinc-400 mt-3 leading-7">
-                  {item.message}
-                </p>
-
+        {/* Messages */}
+        <div className="mt-6 flex flex-col gap-3">
+          {messages.map(item => (
+            <div key={item.id} className="rounded-2xl border-[3px] px-5 py-4"
+              style={{ background: "#0F1629", borderColor: "#00CCFF" }}>
+              <div style={{ fontFamily: "'Boogaloo', cursive", fontSize: 22, color: "#FFD700" }}>
+                {item.name}
               </div>
-            ))
-          }
-
+              <p className="text-sm leading-relaxed mt-2" style={{ color: "#aaa" }}>
+                {item.message}
+              </p>
+            </div>
+          ))}
         </div>
-
       </div>
-
     </section>
   )
 }

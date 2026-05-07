@@ -1,115 +1,162 @@
 import { useEffect, useRef, useState } from "react"
 
+type GameState = "start" | "playing" | "gameOver"
+
 export default function RSVP() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [gameState, setGameState] = useState<"playing" | "gameOver" | "start">("start")
+  const [gameState, setGameState] = useState<GameState>("start")
   const [score, setScore] = useState(0)
 
   const gameRef = useRef({
-    bird: { x: 50, y: 150, velocity: 0, radius: 10 },
+    bird: { x: 50, y: 180, velocity: 0, radius: 14 },
     pipes: [] as Array<{ x: number; topHeight: number; scored?: boolean }>,
     score: 0,
-    gameRunning: false,
+    running: false,
   })
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    const gravity = 0.35
-    const pipeGap = 160
-    const pipeWidth = 60
+    const W = canvas.width
+    const H = canvas.height
+    const gravity = 0.4
+    const pipeGap = 135
+    const pipeW = 48
     const pipeSpeed = 2.5
 
-    const drawBird = () => {
-      const bird = gameRef.current.bird
-      ctx.fillStyle = "#FBBF24"
-      ctx.beginPath()
-      ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2)
-      ctx.fill()
+    function drawStars() {
+      for (let i = 0; i < 35; i++) {
+        const x = (i * 173 + 37) % W
+        const y = (i * 97 + 13) % H
+        const r = (i % 2) + 1
+        ctx!.fillStyle = "#fff"
+        ctx!.globalAlpha = 0.15 + (i % 5) * 0.07
+        ctx!.beginPath()
+        ctx!.arc(x, y, r, 0, Math.PI * 2)
+        ctx!.fill()
+      }
+      ctx!.globalAlpha = 1
     }
 
-    const drawPipes = () => {
-      ctx.fillStyle = "#27272A"
-      gameRef.current.pipes.forEach((pipe) => {
-        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight)
-        ctx.fillRect(
-          pipe.x,
-          pipe.topHeight + pipeGap,
-          pipeWidth,
-          canvas.height - (pipe.topHeight + pipeGap)
-        )
+    function drawPipes() {
+      gameRef.current.pipes.forEach(p => {
+        // Top pipe
+        ctx!.fillStyle = "#00FF88"
+        ctx!.strokeStyle = "#1A1A2E"
+        ctx!.lineWidth = 3
+        roundRect(ctx!, p.x, 0, pipeW, p.topHeight, 6)
+        ctx!.fill()
+        ctx!.stroke()
+        // Pipe cap
+        ctx!.fillStyle = "#00CC66"
+        roundRect(ctx!, p.x - 4, p.topHeight - 16, pipeW + 8, 16, 4)
+        ctx!.fill()
+        ctx!.stroke()
+
+        // Bottom pipe
+        const bottomY = p.topHeight + pipeGap
+        ctx!.fillStyle = "#00FF88"
+        roundRect(ctx!, p.x, bottomY, pipeW, H - bottomY, 6)
+        ctx!.fill()
+        ctx!.stroke()
+        // Bottom cap
+        ctx!.fillStyle = "#00CC66"
+        roundRect(ctx!, p.x - 4, bottomY, pipeW + 8, 16, 4)
+        ctx!.fill()
+        ctx!.stroke()
       })
     }
 
-    const drawScore = () => {
-      ctx.fillStyle = "#FBBF24"
-      ctx.font = "bold 24px Arial"
-      ctx.fillText(`Score: ${gameRef.current.score}`, 20, 40)
+    function roundRect(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+      c.beginPath()
+      c.moveTo(x + r, y)
+      c.lineTo(x + w - r, y)
+      c.arcTo(x + w, y, x + w, y + r, r)
+      c.lineTo(x + w, y + h - r)
+      c.arcTo(x + w, y + h, x + w - r, y + h, r)
+      c.lineTo(x + r, y + h)
+      c.arcTo(x, y + h, x, y + h - r, r)
+      c.lineTo(x, y + r)
+      c.arcTo(x, y, x + r, y, r)
+      c.closePath()
     }
 
-    const checkCollisions = () => {
-      const bird = gameRef.current.bird
+    function drawBird() {
+      const b = gameRef.current.bird
+      ctx!.font = "28px serif"
+      ctx!.textAlign = "center"
+      ctx!.textBaseline = "middle"
+      ctx!.fillText("🛸", b.x, b.y)
+    }
 
-      if (bird.y + bird.radius > canvas.height || bird.y - bird.radius < 0) {
-        setGameState("gameOver")
-        setScore(gameRef.current.score)
-        return true
-      }
+    function drawScore() {
+      ctx!.fillStyle = "#00FF88"
+      ctx!.font = "bold 18px 'Boogaloo', cursive"
+      ctx!.textAlign = "left"
+      ctx!.textBaseline = "top"
+      ctx!.fillText(`Score: ${gameRef.current.score}`, 14, 14)
+    }
 
-      for (let pipe of gameRef.current.pipes) {
+    function drawIdle() {
+      ctx!.fillStyle = "#0A0E1A"
+      ctx!.fillRect(0, 0, W, H)
+      drawStars()
+      ctx!.fillStyle = "#00FF88"
+      ctx!.font = "bold 22px 'Boogaloo', cursive"
+      ctx!.textAlign = "center"
+      ctx!.textBaseline = "middle"
+      ctx!.fillText("Tekan MULAI!", W / 2, H / 2 + 10)
+      ctx!.font = "42px serif"
+      ctx!.fillText("🛸", W / 2, H / 2 - 36)
+    }
+
+    function checkCollision() {
+      const b = gameRef.current.bird
+      if (b.y - b.radius < 0 || b.y + b.radius > H) return true
+      for (const p of gameRef.current.pipes) {
         if (
-          bird.x + bird.radius > pipe.x &&
-          bird.x - bird.radius < pipe.x + pipeWidth &&
-          (bird.y - bird.radius < pipe.topHeight ||
-            bird.y + bird.radius > pipe.topHeight + pipeGap)
-        ) {
-          setGameState("gameOver")
-          setScore(gameRef.current.score)
-          return true
-        }
+          b.x + b.radius > p.x &&
+          b.x - b.radius < p.x + pipeW &&
+          (b.y - b.radius < p.topHeight || b.y + b.radius > p.topHeight + pipeGap)
+        ) return true
       }
-
       return false
     }
 
-    const gameLoop = () => {
-      ctx.fillStyle = "#000000"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+    if (gameState === "start") { drawIdle(); return }
 
-      const bird = gameRef.current.bird
-      bird.velocity += gravity
-      bird.y += bird.velocity
+    function loop() {
+      if (!gameRef.current.running) return
+      ctx!.fillStyle = "#0A0E1A"
+      ctx!.fillRect(0, 0, W, H)
+      drawStars()
 
-      gameRef.current.pipes = gameRef.current.pipes.filter(
-        (pipe) => pipe.x + pipeWidth > 0
-      )
+      // Bird physics
+      gameRef.current.bird.velocity += gravity
+      gameRef.current.bird.y += gameRef.current.bird.velocity
 
+      // Pipes
+      gameRef.current.pipes = gameRef.current.pipes.filter(p => p.x + pipeW > 0)
       if (
         gameRef.current.pipes.length === 0 ||
-        gameRef.current.pipes[gameRef.current.pipes.length - 1].x <
-          canvas.width - 200
+        gameRef.current.pipes[gameRef.current.pipes.length - 1].x < W - 200
       ) {
-        const topHeight =
-          Math.random() * (canvas.height - pipeGap - 100) + 50
         gameRef.current.pipes.push({
-          x: canvas.width,
-          topHeight,
+          x: W,
+          topHeight: 50 + Math.random() * (H - pipeGap - 100),
           scored: false,
         })
       }
 
-      gameRef.current.pipes.forEach((pipe) => {
-        pipe.x -= pipeSpeed
-
-        // Fixed scoring logic
-        if (pipe.x + pipeWidth < 50 && !pipe.scored) {
+      gameRef.current.pipes.forEach(p => {
+        p.x -= pipeSpeed
+        if (!p.scored && p.x + pipeW < gameRef.current.bird.x) {
           gameRef.current.score++
           setScore(gameRef.current.score)
-          pipe.scored = true
+          p.scored = true
         }
       })
 
@@ -117,122 +164,147 @@ export default function RSVP() {
       drawBird()
       drawScore()
 
-      if (!checkCollisions() && gameRef.current.gameRunning) {
-        requestAnimationFrame(gameLoop)
+      if (checkCollision()) {
+        gameRef.current.running = false
+        setGameState("gameOver")
+        setScore(gameRef.current.score)
+        return
       }
+      requestAnimationFrame(loop)
     }
 
-    if (gameState === "playing" && gameRef.current.gameRunning) {
-      const animationId = requestAnimationFrame(gameLoop)
-      return () => cancelAnimationFrame(animationId)
+    if (gameState === "playing" && gameRef.current.running) {
+      const id = requestAnimationFrame(loop)
+      return () => cancelAnimationFrame(id)
     }
   }, [gameState])
 
-  const handleJump = () => {
-    gameRef.current.bird.velocity = -7
+  function jump() {
+    gameRef.current.bird.velocity = -8
   }
 
-  const handleStart = () => {
+  function startGame() {
     gameRef.current = {
-      bird: { x: 50, y: 150, velocity: 0, radius: 10 },
+      bird: { x: 50, y: 180, velocity: 0, radius: 14 },
       pipes: [],
       score: 0,
-      gameRunning: true,
+      running: true,
     }
     setScore(0)
     setGameState("playing")
   }
 
-  const handleRestart = () => {
-    handleStart()
-  }
-
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (
-      (e.key === " " || e.key === "Enter") &&
-      gameState === "playing"
-    ) {
-      e.preventDefault()
-      handleJump()
-    }
-  }
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (gameState === "playing") {
-      e.preventDefault()
-      handleJump()
-    }
-  }
-
-  const handleCanvasClick = () => {
-    if (gameState === "playing") {
-      handleJump()
-    }
-  }
-
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    function onKey(e: KeyboardEvent) {
+      if ((e.key === " " || e.key === "Enter") && gameState === "playing") {
+        e.preventDefault()
+        jump()
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
   }, [gameState])
 
+  const btnStyle: React.CSSProperties = {
+    fontFamily: "'Boogaloo', cursive",
+    fontSize: 20,
+    letterSpacing: 1,
+    background: "#FFD700",
+    color: "#0A0E1A",
+    border: "4px solid #1A1A2E",
+    borderRadius: 40,
+    padding: "12px 36px",
+    boxShadow: "4px 4px 0 #1A1A2E",
+    cursor: "pointer",
+    transition: "all 0.15s",
+  }
+
   return (
-    <section className="py-28 px-6">
-      <div className="max-w-3xl mx-auto bg-zinc-900 rounded-3xl p-10">
-        <div className="text-center">
-          <p className="text-yellow-400 tracking-[4px] uppercase">
-            Mini Game
-          </p>
+    <section id="minigame" className="relative px-6 py-16 overflow-hidden"
+      style={{ background: "#0F1629" }}>
 
-          <h1 className="text-5xl font-bold mt-5">Flappy Bird</h1>
-        </div>
+      {/* Stars */}
+      {[...Array(8)].map((_, i) => (
+        <div key={i} className="absolute rounded-full bg-white animate-pulse pointer-events-none"
+          style={{
+            width: `${(i % 3) + 1}px`, height: `${(i % 3) + 1}px`,
+            top: `${(i * 119 + 11) % 100}%`, left: `${(i * 163 + 47) % 100}%`,
+            opacity: 0.12 + (i % 4) * 0.08,
+            animationDuration: `${1.6 + (i % 3) * 0.5}s`,
+          }} />
+      ))}
 
-        <div className="flex flex-col gap-5 mt-12 items-center">
-          <canvas
-            ref={canvasRef}
-            width={400}
-            height={400}
-            onClick={handleCanvasClick}
-            onTouchStart={handleTouchStart}
-            className="bg-black border-2 border-yellow-400 rounded-xl cursor-pointer w-full max-w-sm"
-          />
+      {/* Header */}
+      <div className="mb-8">
+        <span className="inline-block px-4 py-1 rounded-full font-black text-xs border-[3px] uppercase mb-3"
+          style={{
+            background: "#7B2FBE", color: "#fff",
+            borderColor: "#1A1A2E", letterSpacing: 3,
+          }}>
+          🎮 Mini Game
+        </span>
+        <h2 style={{
+          fontFamily: "'Boogaloo', cursive",
+          fontSize: 40, color: "#fff",
+          textShadow: "3px 3px 0 #1A1A2E", lineHeight: 1,
+        }}>
+          Flappy<br />Morty!
+        </h2>
+      </div>
 
+      {/* Game Box */}
+      <div className="rounded-2xl border-[4px] p-6 max-w-sm mx-auto"
+        style={{
+          background: "#0A0E1A",
+          borderColor: "#00FF88",
+          boxShadow: "0 0 25px rgba(0,255,136,0.2)",
+        }}>
+        <canvas
+          ref={canvasRef}
+          width={300}
+          height={360}
+          onClick={() => { if (gameState === "playing") jump() }}
+          onTouchStart={e => { e.preventDefault(); if (gameState === "playing") jump() }}
+          className="block mx-auto rounded-xl cursor-pointer"
+          style={{
+            border: "3px solid #1A1A2E",
+            width: "100%",
+            maxWidth: 300,
+            touchAction: "none",
+          }}
+        />
+
+        <div className="mt-4 text-center">
           {gameState === "start" && (
-            <button
-              onClick={handleStart}
-              className="bg-yellow-400 text-black font-bold p-4 px-8 rounded-xl hover:scale-105 duration-300"
-            >
-              Mulai Game
+            <button style={btnStyle} onClick={startGame}>
+              Mulai! ⚡
             </button>
           )}
 
           {gameState === "gameOver" && (
-            <div className="text-center">
-              <p className="text-yellow-400 text-2xl font-bold">
-                Game Over!
+            <div>
+              <p style={{ fontFamily: "'Boogaloo', cursive", fontSize: 26, color: "#FF6B9D" }}>
+                Morty Down! 💀
               </p>
-
-              <p className="text-zinc-300 mt-2 text-xl">Score: {score}</p>
-
-              <button
-                onClick={handleRestart}
-                className="bg-yellow-400 text-black font-bold p-4 px-8 rounded-xl mt-4 hover:scale-105 duration-300"
-              >
-                Main Lagi
+              <p className="text-lg font-bold mt-1" style={{ color: "#FFD700" }}>
+                Score: {score}
+              </p>
+              <button style={{ ...btnStyle, marginTop: 12 }} onClick={startGame}>
+                Main Lagi!
               </button>
             </div>
           )}
 
           {gameState === "playing" && (
-            <div className="text-center w-full">
-              <p className="text-zinc-400 text-sm mb-3">
+            <div>
+              <p className="text-xs mb-3" style={{ color: "#555", letterSpacing: 1 }}>
                 Tap layar atau tekan SPACE untuk terbang!
               </p>
-
               <button
-                onClick={handleJump}
-                className="w-full bg-yellow-400 text-black font-bold p-3 rounded-xl hover:scale-105 duration-300 md:hidden"
-              >
-                TERBANG ✨
+                onClick={jump}
+                className="md:hidden"
+                style={{ ...btnStyle, width: "100%" }}>
+                TERBANG 🛸
               </button>
             </div>
           )}
